@@ -1,0 +1,30 @@
+aws cloudformation create-stack \
+	--stack-name awsacgscaldock \
+	--template-body file://aws-acg-scaling-docker-course-machine.yaml \
+	--parameters ParameterKey=vpcCIDR,ParameterValue=10.23.0.0/16 \
+						   ParameterKey=az,ParameterValue=us-east-1a \
+	             ParameterKey=azPublicSubnetCIDR,ParameterValue=10.23.1.0/24 \
+							 ParameterKey=keypair,ParameterValue=DDBCourse \
+							 ParameterKey=remoteaccessIp,ParameterValue=115.249.63.129/32
+
+
+aws cloudformation create-stack --stack-name aws-acg-scal-dock --template-body file://aws-acg-scaling-docker-course-machine.yaml --parameters ParameterKey=vpcCIDR,ParameterValue=10.23.0.0/16 ParameterKey=az,ParameterValue=us-east-1a ParameterKey=azPublicSubnetCIDR,ParameterValue=10.23.1.0/24 ParameterKey=keypair,ParameterValue=DDBCourse ParameterKey=remoteaccessIp,ParameterValue=115.249.63.129/32
+aws cloudformation create-stack --stack-name aws-acg-scal-dock --template-body file://aws-acg-scaling-docker-course-machine.yaml
+aws cloudformation delete-stack --stack-name aws-acg-scal-dock
+aws cloudformation create-stack --stack-name aws-acg-scal-dock --template-body file://aws-acg-scaling-docker-course-machine.yaml --capabilities CAPABILITY_NAMED_IAM
+
+
+aws ecs create-cluster --cluster-name deepdive --region "us-east-1"
+aws ecs list-clusters --region "us-east-1"
+aws ecs describe-clusters --region "us-east-1" --clusters deepdive
+aws ecs delete-cluster --region "us-east-1" --cluster deepdive
+aws ecs list-container-instances --cluster deepdive --region us-east-1
+aws ecs describe-container-instances --cluster deepdive --container-instances <arn> --region us-east-1
+aws ec2 terminate-instances --instance-ids
+
+aws s3api create-bucket --bucket rkmeia_deepdive --region us-east-1
+aws s3 cp ecs.config s3://rkmeia_deepdive/ecs.config --region us-east-1
+aws s3 ls s3://rkmeia_deepdive --region us-east-1
+
+-- create ec2 container instance running ECS optimized Amazon linux ami 2
+aws ec2 run-instances --image-id ami-0fac5486e4cff37f4 --count 1 --instance-type t2.micro --iam-instance-profile Name=aws-acg-scal-dock-ec2-ecs-instance-role --key-name DDBCourse --security-group-ids

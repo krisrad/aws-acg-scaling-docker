@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Mappings:
+  RegionMap:
+    us-east-1:
+      "UBUNTU1804" : "ami-07d0cf3af28718ef8"
+    us-west-1:
+      "UBUNTU1804" : "ami-07d0cf3af28718ef8"
+    ap-south-1:
+      "UBUNTU1804" : "ami-07d0cf3af28718ef8"
+Resources:
+  IAMRoleLabMachine:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Join ["-", [!Ref "AWS::StackName", "ec2", "lab", "machine", "role"]]
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+  Ec2InstanceProfileLabMachine:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles:
+        - !Ref IAMRoleLabMachine
+  Ec2LabMachine:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", UBUNTU1804]
+      # InstanceType: t2.micro
+      InstanceType: t2.small
+      SubnetId: !ImportValue scaldock-basinfra-pubsubid
+      KeyName: !ImportValue scaldock-basinfra-keypairid
+      SecurityGroupIds:
+        - !ImportValue scaldock-basinfra-EC2SGid
+      IamInstanceProfile: !Ref Ec2InstanceProfileLabMachine
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash
+            # install docker
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            add-apt-repository \
+               "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+               $(lsb_release -cs) \
+               stable"
+            apt-get update
+            apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu
+            apt-mark hold docker-ce
+            docker version
+            # install docker-compose
+            curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            docker-compose --version
+            apt-get install awscli -y
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "lab", "machine"]]
+Outputs:
+  Ec2LabMachinePubIp:
+    Description: Ec2 Lab Machine Public IP
+    Value: !GetAtt Ec2LabMachine.PublicIp
+  Ec2LabMachinePvtIp:
+    Description: Ec2 Lab Machine Private IP
+    Value: !GetAtt Ec2LabMachine.PrivateIp
